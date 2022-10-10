@@ -7,18 +7,18 @@ from boto3.dynamodb.conditions import Key, Attr
 
 
 """
-status : 0 ->created, 1-> success, -1->fail, 3->inqueue
+status : -1->created, 1-> success, 0->fail
 """
 class MessageDB:
-    def __init__(self,dynamodb):
+    def __init__(self,logger, dynamodb):
         self.dynamodb = dynamodb
         self.table = None
-        self.logger = logging.getLogger(__name__)
+        self.logger = logger
 
     def connect(self):
         # Get the service resource.
         try:
-            dynamodb = boto3.resource('dynamodb')
+            dynamodb = boto3.resource('dynamodb', region_name="us-west-2")
             print("Connected to AWS DynamoDB")
             return dynamodb
         except ClientError as err:
@@ -51,13 +51,15 @@ class MessageDB:
                 self.table = self.dynamodb.create_table(
                     TableName=table_name,
                     AttributeDefinitions=[
-                        {'AttributeName': 'sentTo', 'AttributeType': 'S'},
-                        {'AttributeName': 'content', 'AttributeType': 'S'},
+                        {'AttributeName': 'messageID', 'AttributeType': 'S'},
+                        # {'AttributeName': 'sentTo', 'AttributeType': 'S'},
+                        # {'AttributeName': 'content', 'AttributeType': 'S'},
                         {'AttributeName': 'Qstatus', 'AttributeType': 'N'},
                     ],
                     KeySchema=[
-                        {'AttributeName': 'sentTo', 'KeyType': 'HASH'},
-                        {'AttributeName': 'content', 'KeyType': 'RANGE'},
+                        {'AttributeName': 'messageID', 'KeyType': 'HASH'},
+                        # {'AttributeName': 'sentTo', 'KeyType': 'HASH'},
+                        # {'AttributeName': 'content', 'KeyType': 'RANGE'},
                     ],
                     GlobalSecondaryIndexes=[
                         {
@@ -83,7 +85,7 @@ class MessageDB:
                 self.table.wait_until_exists()
 
                 # Print out some data about the table.
-                print("Table contents:", self.table.item_count)
+                # print("Table contents:", self.table.item_count)
                 
             except ClientError as err:
                     self.logger.error(
@@ -92,32 +94,33 @@ class MessageDB:
                     raise
         
     
-    def addMessage(self, phno, messagePayload):
+    def addMessage(self, messageId, phno, messageBody):
         try:
             # add phno, message pair produced by Producer into the database
             currtime = str(datetime.now())
             self.table.put_item(
                 Item={
+                    'messageID': messageId,
                     'sentTo': phno,
-                    'content': messagePayload,
-                    'Qstatus': 0,
+                    'content': messageBody,
+                    'Qstatus': -1,
                     'createdDatetime':currtime,
                     'sendDatetime':currtime,
                     'updateDatetime':currtime})
-            print(self.table.item_count)
+            # print(self.table.item_count)
         except ClientError as err:
             self.logger.error(
                 "Couldn't add message (%s,%s) to table %s. Here's why: %s: %s",
-                phno, messagePayload, self.table.name,
+                phno, messageBody, self.table.name,
                 err.response['Error']['Code'], err.response['Error']['Message'])
             raise
 
-    def updateStatus(self, phno, messagePayload, currStatus):
+    def updateStatus(self, phno, messageBody, currStatus):
         try:
             self.table.update_item(
                 Key={
                     'sentTo': phno,
-                    'content': messagePayload
+                    'content': messageBody
                 },
                 UpdateExpression='SET Qstatus = :stat',
                 ExpressionAttributeValues={
@@ -126,7 +129,7 @@ class MessageDB:
             )
         except ClientError as err:
             self.logger.error(
-                "Couldn't update the status of the message pair (%s,%s). Here's why: %s: %s", phno, messagePayload,
+                "Couldn't update the status of the message pair (%s,%s). Here's why: %s: %s", phno, messageBody,
                 err.response['Error']['Code'], err.response['Error']['Message'])
             raise
     
@@ -138,15 +141,32 @@ class MessageDB:
                 "Couldn't execute the query on table %s. Here's why: %s: %s", self.table.name, err.response['Error']['Code'], err.response['Error']['Message'])
             raise
         return totalCount['Count']
-
-
-    def deleteMessage(self, phno, messagePayload):
-        # deleting phno, message pair
+    
+    def getStatusByID(self, reqID):
         try:
-            self.table.delete_item(Key={'sentTo': phno, 'content': messagePayload})
+            totalCount = self.table.query(IndexName='activity', KeyConditionExpression= Key('Qstatus').eq(reqStatus))
         except ClientError as err:
             self.logger.error(
-                "Couldn't delete message pair (%s,%s). Here's why: %s: %s", phno, messagePayload,
+                "Couldn't execute the query on table %s. Here's why: %s: %s", self.table.name, err.response['Error']['Code'], err.response['Error']['Message'])
+            raise
+        return totalCount['Count']
+    
+    def updateSendTime(self, reqID):
+        pass
+
+    def getAvgTime(self):
+        pass
+
+    def getMessagesSent(self):
+        pass
+
+    def deleteMessage(self, phno, messageBody):
+        # deleting phno, message pair
+        try:
+            self.table.delete_item(Key={'sentTo': phno, 'content': messageBody})
+        except ClientError as err:
+            self.logger.error(
+                "Couldn't delete message pair (%s,%s). Here's why: %s: %s", phno, messageBody,
                 err.response['Error']['Code'], err.response['Error']['Message'])
             raise
     
