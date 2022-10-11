@@ -151,14 +151,13 @@ class MessageDB:
             raise
         return totalCount['Count']
     
-    def updateSendTime(self, reqID):
+    def updateSendTime(self, reqID, newTime):
+
         pass
 
     def getAvgTime(self):
         pass
 
-    def getMessagesSent(self):
-        pass
 
     def deleteMessage(self, phno, messageBody):
         # deleting phno, message pair
