@@ -1,4 +1,5 @@
 import asyncio
+import producerUtil, senderUtil
 
 
 class ActivityMonitor:
@@ -6,11 +7,18 @@ class ActivityMonitor:
         self.checkTime = checkTime
     
     def getQuery(self):
-        pass
+        logger = logging.getLogger(__name__)
+        db = producerUtil.MessageDB(logger, None)
+        messagesFailed = db.getStatus(0)
+        totalMessages = db.getStatus(1)+messagesFailed
+        avgTime = db.getAvgTime()
+        return messagesFailed, totalMessages, avgTime
+
     
     async def run(self):
         while True:
-            print("Hello")
+            messagesFailed, totalMessages, avgTime = self.getQuery()
+            print(messagesFailed, totalMessages, avgTime)
             await asyncio.sleep(self.checkTime)
 
     # if __name__ == '__main__':
