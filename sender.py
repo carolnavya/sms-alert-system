@@ -23,19 +23,20 @@ class Sender:
         currFailRate = 0
         n_failed = 0
         total = 0
-        for i in range(10):
+        flag = True
+        while(flag):
             messageID = sqs.getMessgaeFromQueue(dynamodb, queueUrl)
             print("Message ID: {}", messageID)
             if messageID !=None:
                 total+=1
-                currFailRate = n_failed/total
+                currFailRate = round(n_failed/total,1)
                 print(currFailRate, self.failureRate, currFailRate>self.failureRate )
                 #elapsedTime = dynamodb.getElapsedTime(messageID)
                 if currFailRate<self.failureRate:
                     #fail message
                     dynamodb.updateStatus(messageID, 0)
                     n_failed +=1
-                    currFailRate = n_failed/total
+                    currFailRate =round(n_failed/total,1)
                 # elif elapsedTime > self.waitTime:
                 #     #fail message
                 #     dynamodb.updateStatus(messageID, 0)
@@ -43,9 +44,9 @@ class Sender:
                 #     currFailRate = n_failed/total
                 else:
                     dynamodb.updateStatus(messageID, 1)
-                if currFailRate >= self.failureRate:
-                    break
-        sleep(self.waitTime)
+                if currFailRate <= self.failureRate:
+                    flag = False
+                sleep(self.waitTime)
     
     def run(self):
         logger = logging.getLogger(__name__)
