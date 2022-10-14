@@ -15,10 +15,6 @@ class Sender:
         self.waitTime = waitTime
         self.failureRate = failureRate
     
-    def configureWaitTime():
-        #query to get avgWaitTime
-        pass
-    
     def process_message(self,dynamodb, sqs, queueUrl):
         currFailRate = 0
         n_failed = 0
@@ -37,15 +33,10 @@ class Sender:
                     dynamodb.updateStatus(messageID, 0)
                     n_failed +=1
                     currFailRate =round(n_failed/total,1)
-                # elif elapsedTime > self.waitTime:
-                #     #fail message
-                #     dynamodb.updateStatus(messageID, 0)
-                #     n_failed +=1
-                #     currFailRate = n_failed/total
                 else:
                     dynamodb.updateStatus(messageID, 1)
-                if currFailRate <= self.failureRate:
-                    flag = False
+            if currFailRate <= self.failureRate or messageID == None: 
+                flag = False
                 sleep(self.waitTime)
     
     def run(self):
@@ -62,7 +53,12 @@ class Sender:
         self.process_message(db, queue, queueUrl)
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-w', dest='waitTime', type=int, help='Add time that each sender has to wait (in seconds) before sending the next message')
+    parser.add_argument('-f', dest='failureRate', type=float, help='Add Failure Rate for the sender (percentage %)')
+    args = parser.parse_args()
     logger = logging.getLogger(__name__)
-    sender = Sender(logger, 5, 0.70)
+    sender = Sender(logger, args.waitTime, args.failureRate/100)
     sender.run()
 
