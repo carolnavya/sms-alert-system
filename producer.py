@@ -42,7 +42,7 @@ class Producer():
             db.createTable("messages")
         queue.sqs = queue.getSQSInstance()
         queueUrl = queue.getQueueUrl('message-queue.fifo')
-        for idx in range(maxMessages):
+        for idx in range(self.maxMessages):
             messageId = str(uuid.uuid4())
             phno, sms = producer.createMessage()
             db.addMessage(messageId, phno, sms)
@@ -50,9 +50,13 @@ class Producer():
 
 
 if __name__ == '__main__':
-    maxMessages = 10
-    messageLength = 100
-    Producer(maxMessages, messageLength).run()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-max', dest='maxMessages', type=int, help='Add time that each sender has to wait (in seconds) before sending the next message')
+    parser.add_argument('-len', dest='messageLength', type=int, help='Add Failure Rate for the sender (percentage %)')
+    args = parser.parse_args()
+    logger = logging.getLogger(__name__)
+    Producer(args.maxMessages, args.messageLength).run()
 
 
 

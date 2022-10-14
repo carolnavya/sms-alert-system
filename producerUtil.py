@@ -169,10 +169,10 @@ class MessageDB:
 
     def updateMessageTimer(self, reqID, sendTime, receiveTime):
         try:
+            sendTime = sendTime.split("+")[0]
 
             sendTime = datetime.strptime(sendTime, '%Y-%m-%d %H:%M:%S.%f')
-
-            receiveTime = datetime.strptime(str(receiveTime), '%Y-%m-%d %H:%M:%S.%f')
+            receiveTime = datetime.strptime(str(receiveTime), '%Y-%m-%d %H:%M:%S')
 
             print(sendTime, receiveTime)
 
@@ -206,10 +206,10 @@ class MessageDB:
                     ':currTime': str(newTime)
                 }
             )
-            #sendTime = self.getSendTime(reqID)
-            #print()
+            sendTime = self.getSendTime(reqID)
+            print(sendTime)
             print("Updated")
-            #self.updateMessageTimer(reqID, sendTime, newTime)
+            self.updateMessageTimer(reqID, sendTime, newTime)
         except ClientError as err:
             self.logger.error(
                 "Couldn't update receive time of message %s. Here's why: %s: %s", reqID,
