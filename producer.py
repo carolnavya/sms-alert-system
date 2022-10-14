@@ -43,7 +43,7 @@ class Producer():
         queue.sqs = queue.getSQSInstance()
         queueUrl = queue.getQueueUrl('message-queue.fifo')
         for idx in range(maxMessages):
-            messageId = uuid.uuid4()
+            messageId = str(uuid.uuid4())
             phno, sms = producer.createMessage()
             db.addMessage(messageId, phno, sms)
             queue.addToQueue(queueUrl, messageId)

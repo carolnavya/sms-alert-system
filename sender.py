@@ -4,6 +4,9 @@ from botocore.exceptions import ClientError
 import logging
 import uuid
 import senderUtil, producerUtil
+from datetime import datetime
+
+
 
 class Sender:
     def __init__(self, logger, waitTime, failureRate):
@@ -18,26 +21,30 @@ class Sender:
     
     def process_message(self,dynamodb, sqs, queueUrl):
         currFailRate = 0
-        response = sqs.receive_message(QueueUrl=queueUrl, MaxNumberOfMessages=1, WaitTimeSeconds=5)
-        self.logger.info(response)
-        print(response)
-        for message in response.get("Messages", []):
-            self.deleteMessage(message['ReceiptHandle'])
-            messageID = message["Body"]
-            receiptHandle = message["ReceiptHandle"]
-            #dynamodb.getStatus(messageID)
-            #query to update Received Time
-            if currFailRate<self.failureRate:
-                #fail message
-                dynamodb.updateStatus(0)
-            # elif <waittime> > self.waitTime:
-            #     #fail message
-            #     dynamodb.updateStatus(0)
-            else:
-                dynamodb.updateStatus(1)
-
-            print(f"Message body: {messageID}")
-            print(f"Receipt Handle: {receiptHandle}")
+        n_failed = 0
+        total = 0
+        for i in range(10):
+            messageID = sqs.getMessgaeFromQueue(dynamodb, queueUrl)
+            print("Message ID: {}", messageID)
+            if messageID !=None:
+                total+=1
+                currFailRate = n_failed/total
+                print(currFailRate, self.failureRate, currFailRate>self.failureRate )
+                #elapsedTime = dynamodb.getElapsedTime(messageID)
+                if currFailRate<self.failureRate:
+                    #fail message
+                    dynamodb.updateStatus(messageID, 0)
+                    n_failed +=1
+                    currFailRate = n_failed/total
+                # elif elapsedTime > self.waitTime:
+                #     #fail message
+                #     dynamodb.updateStatus(messageID, 0)
+                #     n_failed +=1
+                #     currFailRate = n_failed/total
+                else:
+                    dynamodb.updateStatus(messageID, 1)
+                if currFailRate >= self.failureRate:
+                    break
         sleep(self.waitTime)
     
     def run(self):
@@ -52,4 +59,9 @@ class Sender:
         queue.sqs = queue.getSQSInstance()
         queueUrl = queue.getQueueUrl('message-queue.fifo')
         self.process_message(db, queue, queueUrl)
+
+if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
+    sender = Sender(logger, 5, 0.70)
+    sender.run()
 

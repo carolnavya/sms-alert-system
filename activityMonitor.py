@@ -9,12 +9,11 @@ class ActivityMonitor:
     def getQuery(self):
         logger = logging.getLogger(__name__)
         db = producerUtil.MessageDB(logger, None)
-        messagesFailed = db.getStatus(0)
-        totalMessages = db.getStatus(1)+messagesFailed
-        avgTime = db.getAvgTime()
+        # messagesFailed = db.getStatus(0)
+        # totalMessages = db.getStatus(1)+messagesFailed
+        # avgTime = db.getAvgTime()
         return messagesFailed, totalMessages, avgTime
 
-    
     async def run(self):
         while True:
             messagesFailed, totalMessages, avgTime = self.getQuery()
