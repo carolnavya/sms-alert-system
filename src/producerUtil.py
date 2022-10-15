@@ -6,10 +6,6 @@ from botocore.exceptions import ClientError
 import pytz
 from boto3.dynamodb.conditions import Key, Attr
 
-"""
-status : -1->created, 1-> success, 0->fail
-"""
-
 class MessageDB:
     """
     Creates an object SQS Message queue class
@@ -59,9 +55,20 @@ class MessageDB:
         return exists
 
     def createTable(self, table_name):
+        
         """
         Check if a table in the DB to track messages produced
         :param table_name: Name of the desired dynamoDB table 
+
+        :Attribute messageID (PRIMARY KEY): unique identifier for each message created
+        :Attribute QStatus (SECONDARY KEY): Status of message {-1: Created, +1: success, 0: Fail}
+        :Attribute sentTo: destination phone number
+        :Attribute content: content of the sms
+        :Attribute createdDatetime: timestamp when message was created
+        :Attribute sendDatetime: timestamp when message was created
+        :Attribute createdDatetime: timestamp when message enters the queue
+        :Attribute receivedDatetime: timestamp when message was collected by Sender and simulate sending
+        :Attribute sendTime: duration of time the message lives in the queue until it is simulated
         """
         if not self.exists(table_name):
             # Create the DynamoDB table.
@@ -114,7 +121,11 @@ class MessageDB:
     
     def addMessage(self, messageId, phno, messageBody):
         """
-        Add message to the 
+        Add message to the table
+
+        :Attribute phno: destination phone number
+        :Attribute messageBody: content of the sms
+        :Attribute messageID: unique identifier of message
         """
         try:
             # add phno, message pair produced by Producer into the database
@@ -129,7 +140,7 @@ class MessageDB:
                     'createdDatetime':currtime,
                     'sendDatetime':currtime,
                     'receivedDatetime':currtime,
-                    'messageTime':0})
+                    'messageTime':"0"})
             # print(self.table.item_count)
         except ClientError as err:
             self.logger.error(
@@ -139,6 +150,13 @@ class MessageDB:
             raise
 
     def updateStatus(self, messageID, currStatus):
+        """
+        Add Status of the message being processed
+        
+        :Attribute messageID: unique identifier of message
+        :Attribute currStatus: status update of the message
+       
+        """
         try:
             self.table.update_item(
                 Key={
@@ -154,24 +172,6 @@ class MessageDB:
                 "Couldn't update the status of the message pair (%s,%s). Here's why: %s: %s", phno, messageBody,
                 err.response['Error']['Code'], err.response['Error']['Message'])
             raise
-    
-    def getStatus(self, reqStatus):
-        try:
-            totalCount = self.table.query(Key='messageID', Select='COUNT', KeyConditionExpression= Key('Qstatus').eq(reqStatus))
-        except ClientError as err:
-            self.logger.error(
-                "Couldn't execute the query on table %s. Here's why: %s: %s", self.table.name, err.response['Error']['Code'], err.response['Error']['Message'])
-            raise
-        return totalCount['Count']
-    
-    def getStatusByID(self, reqID):
-        try:
-            msg_status = self.table.query(KeyConditionExpression = Key('messageID').eq(reqID))
-        except ClientError as err:
-            self.logger.error(
-                "Couldn't execute the query on table %s. Here's why: %s: %s", self.table.name, err.response['Error']['Code'], err.response['Error']['Message'])
-            raise
-        return msg_status
 
     def getSendTime(self, reqID):
         """
@@ -193,11 +193,15 @@ class MessageDB:
         :param reqID: Unique message ID
         :return elapsedTime: Time to send the message
         """
-        msgTime = self.table.query(
-            ProjectionExpression="messageTime",
-            KeyConditionExpression = Key('messageID').eq(reqID))
-        elapsedTime = msgTime['Items'][0]['messageTime']
-        return elapsedTime
+        try:
+            msgTime = self.table.query(
+                ProjectionExpression="messageTime",
+                KeyConditionExpression = Key('messageID').eq(reqID))
+            elapsedTime = msgTime['Items'][0]['messageTime']
+            return 
+        except ClientError as err:
+            self.logger.error("Couldn't get messageTime for messaggeID %s. Here's why: %s: %s", reqID, err.response['Error']['Code'], err.response['Error']['Message'])
+            raise
 
     def updateMessageTimer(self, reqID, sendTime, receiveTime):
         """
@@ -226,9 +230,7 @@ class MessageDB:
                 }
             )
         except ClientError as err:
-            self.logger.error(
-                "Couldn't update the status of the message pair (%s,%s). Here's why: %s: %s", phno, messageBody,
-                err.response['Error']['Code'], err.response['Error']['Message'])
+            self.logger.error( "Couldn't update the status of the message ID %s. Here's why: %s: %s", reqID, err.response['Error']['Code'], err.response['Error']['Message'])
             raise
            
     def updateTimer(self, reqID, newTime):
@@ -258,7 +260,7 @@ class MessageDB:
             self.updateMessageTimer(reqID, sendTime, newTime)
         except ClientError as err:
             self.logger.error(
-                "Couldn't update receive time of message %s. Here's why: %s: %s", reqID,
+                "Couldn't update receive time of message ID %s. Here's why: %s: %s", reqID,
                 err.response['Error']['Code'], err.response['Error']['Message'])
             raise
 
@@ -277,11 +279,4 @@ class MessageDB:
                 "Couldn't delete message ID %s. Here's why: %s: %s", reqID,
                 err.response['Error']['Code'], err.response['Error']['Message'])
             raise
-    
-# if __name__ == '__main__':
-#     logger = logging.getLogger(__name__)
-#     db = MessageDB(logger, None)
-#     if not db.dynamodb:
-#         db.dynamodb = db.connect()
-#         print(db.createTable("messages"))
-#         print(db.updateTimer('c1eb8135-428d-43fe-a830-17d392fd8e12', (datetime.now())))
+

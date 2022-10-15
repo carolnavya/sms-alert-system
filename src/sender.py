@@ -1,11 +1,3 @@
-from time import sleep
-import boto3
-from botocore.exceptions import ClientError
-import logging
-import uuid
-import src.senderUtil as senderUtil, src.producerUtil as producerUtil
-from datetime import datetime
-
 class Sender:
     """
     Creates an object of the Sender class
@@ -37,14 +29,14 @@ class Sender:
             print("Message ID: {}", messageID)
             if messageID !=None:
                 total+=1
-                currFailRate = round(n_failed/total,1)
+                currFailRate = round(n_failed/total,2)
                 print(currFailRate, self.failureRate, currFailRate>self.failureRate )
                 #elapsedTime = dynamodb.getElapsedTime(messageID)
                 if currFailRate<self.failureRate:
                     #fail message
                     dynamodb.updateStatus(messageID, 0)
                     n_failed +=1
-                    currFailRate =round(n_failed/total,1)
+                    currFailRate =round(n_failed/total,2)
                 else:
                     dynamodb.updateStatus(messageID, 1)
             if currFailRate <= self.failureRate or messageID == None: 
@@ -66,6 +58,14 @@ class Sender:
 
 if __name__ == "__main__":
     import argparse
+    from time import sleep
+    import boto3
+    from botocore.exceptions import ClientError
+    import logging
+    import uuid
+    import senderUtil, producerUtil as producerUtil
+    from datetime import datetime
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', dest='waitTime', type=int, help='Add time that each sender has to wait (in seconds) before sending the next message')
     parser.add_argument('-f', dest='failureRate', type=float, help='Add Failure Rate for the sender (percentage %)')

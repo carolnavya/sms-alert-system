@@ -3,7 +3,7 @@ import logging
 from urllib import response
 import boto3
 from botocore.exceptions import ClientError
-import src.producerUtil as producerUtil
+import producerUtil
 
 class MessageQueue:
 
@@ -42,7 +42,10 @@ class MessageQueue:
                                                     'DelaySeconds':'5',
                                                     'FifoQueue': 'true',
                                                     'MessageRetentionPeriod':'86400',
-                                                    'ContentBasedDeduplication':'true' })
+                                                    'ContentBasedDeduplication':'true',
+                                                    'ReceiveMessageWaitTimeSeconds': '20',
+                                                    'VisibilityTimeout':'30',
+                                                     })
             self.logger.info(response)
             return response['QueueUrl']
 
