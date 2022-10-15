@@ -1,3 +1,12 @@
+import argparse
+from phone_gen import PhoneNumber
+import random
+import string
+import producerUtil
+import senderUtil
+import logging
+import uuid
+
 class Producer():
 
     def __init__(self,maxMessages, messageLength):
@@ -11,7 +20,7 @@ class Producer():
 
     # generate a SMS message with 100 random characters
     def messageGenerator(self):
-        characters = string.ascii_letters + string.digits + string.whitespace
+        characters = string.ascii_letters + string.digits
         randomMessage = ''.join(random.choice(characters) for i in range(self.messageLength))
         return randomMessage
 
@@ -42,15 +51,6 @@ class Producer():
 
 
 if __name__ == '__main__':
-    import argparse
-    from phone_gen import PhoneNumber
-    import random
-    import string
-    import producerUtil
-    import senderUtil
-    import logging
-    import uuid
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', dest='maxMessages', type=int, help='Add time that each sender has to wait (in seconds) before sending the next message')
     parser.add_argument('-l', dest='messageLength', type=int, help='Add Failure Rate for the sender (percentage %)')
