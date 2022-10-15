@@ -30,7 +30,7 @@ python3 sender.py
 ```
 To run activity Monitor
 ```
-python3 python3 activityMonitor.py -t=<Time(SECS)-to-casually-overlook-stats>
+python3 python3 activityMonitor.py -t=<Time(in SECS)-to-casually-overlook-stats>
 ```
 ## References
 - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html
