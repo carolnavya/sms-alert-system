@@ -3,12 +3,17 @@ import boto3
 from botocore.exceptions import ClientError
 import logging
 import uuid
-import senderUtil, producerUtil
+import src.senderUtil as senderUtil, src.producerUtil as producerUtil
 from datetime import datetime
 
-
-
 class Sender:
+    """
+    Creates an object of the Sender class
+    :param logger: Track the logging info
+    :param waitTime: Time the sender waits before sending tne next message
+    :param failureRate: Failure rate of the sender
+    """
+
     def __init__(self, logger, waitTime, failureRate):
         self.logger = logger
         self.senderID = uuid.uuid4()
@@ -16,6 +21,13 @@ class Sender:
         self.failureRate = failureRate
     
     def process_message(self,dynamodb, sqs, queueUrl):
+        """
+        Pick message from the Producer and simulate sending SMS
+
+        :param dynamodb: dynamo DB instance
+        :param sqs:  Amazon SQS instance
+        :param queueURL: SQS Queue name
+        """
         currFailRate = 0
         n_failed = 0
         total = 0

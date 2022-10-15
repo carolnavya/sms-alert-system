@@ -1,8 +1,8 @@
 from phone_gen import PhoneNumber
 import random
 import string
-import producerUtil
-import senderUtil
+import src.producerUtil as producerUtil
+import src.senderUtil as senderUtil
 import logging
 import uuid
 

@@ -1,5 +1,6 @@
 import asyncio
-import producerUtil, senderUtil
+import src.producerUtil as producerUtil, src.senderUtil as senderUtil
+import logging
 
 
 class ActivityMonitor:

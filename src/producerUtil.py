@@ -11,12 +11,20 @@ status : -1->created, 1-> success, 0->fail
 """
 
 class MessageDB:
+    """
+    Creates an object SQS Message queue class
+    :param logger: Track the log info
+    :param dynamodb: Instance of AWS dynamoDB 
+    """  
     def __init__(self,logger, dynamodb):
         self.dynamodb = dynamodb
         self.table = None
         self.logger = logger
 
     def connect(self):
+        """
+        Connect to AWS DynamoDB
+        """  
         # Get the service resource.
         try:
             dynamodb = boto3.resource('dynamodb', region_name="us-west-2")
@@ -28,6 +36,11 @@ class MessageDB:
             raise
     
     def exists(self, table_name):
+        """
+        Check if a table exists in the DB
+        :param table_name: Name of the desired dynamoDB table
+        :return: True if exists else False 
+        """
         try:
             table = self.dynamodb.Table(table_name)
             table.load()
@@ -46,6 +59,10 @@ class MessageDB:
         return exists
 
     def createTable(self, table_name):
+        """
+        Check if a table in the DB to track messages produced
+        :param table_name: Name of the desired dynamoDB table 
+        """
         if not self.exists(table_name):
             # Create the DynamoDB table.
             try:
@@ -96,6 +113,9 @@ class MessageDB:
         
     
     def addMessage(self, messageId, phno, messageBody):
+        """
+        Add message to the 
+        """
         try:
             # add phno, message pair produced by Producer into the database
             currtime = datetime.now().astimezone(pytz.timezone("Etc/GMT"))
@@ -154,6 +174,12 @@ class MessageDB:
         return msg_status
 
     def getSendTime(self, reqID):
+        """
+        Get the time when message of given messageID first entered the queue
+
+        :param reqID: Unique message ID
+        :return sendTime: Time when message entered the queue
+        """
         msg_sendTime = self.table.query(
             ProjectionExpression="sendDatetime",
             KeyConditionExpression = Key('messageID').eq(reqID))
@@ -161,6 +187,12 @@ class MessageDB:
         return sendTime
     
     def getElapsedTime(self, reqID):
+        """
+        Update messageTime of given messageID
+
+        :param reqID: Unique message ID
+        :return elapsedTime: Time to send the message
+        """
         msgTime = self.table.query(
             ProjectionExpression="messageTime",
             KeyConditionExpression = Key('messageID').eq(reqID))
@@ -168,6 +200,13 @@ class MessageDB:
         return elapsedTime
 
     def updateMessageTimer(self, reqID, sendTime, receiveTime):
+        """
+        Update messageTime of given messageID
+
+        :param reqID: Unique message ID
+        :param sendTime: Time when message entered the queue
+        :param receiveTime: Time when the message was successfully retrieved and simulated
+        """
         try:
             sendTime = sendTime.split("+")[0]
 
@@ -193,6 +232,12 @@ class MessageDB:
             raise
            
     def updateTimer(self, reqID, newTime):
+        """
+        Update receivedDatetime of given messageID
+
+        :param reqID: Unique message ID
+        :param newTime: updated received time
+        """
         try:
             newTime = datetime.strptime(str(newTime), '%a, %d %b %Y %H:%M:%S %Z')
             print(newTime)
@@ -206,9 +251,10 @@ class MessageDB:
                     ':currTime': str(newTime)
                 }
             )
+            self.logger.info("Successfully updated receive time of messageID {0}".format(reqID))
             sendTime = self.getSendTime(reqID)
-            print(sendTime)
-            print("Updated")
+            # print(sendTime)
+            # print("Updated")
             self.updateMessageTimer(reqID, sendTime, newTime)
         except ClientError as err:
             self.logger.error(
@@ -217,20 +263,25 @@ class MessageDB:
             raise
 
 
-    def deleteMessage(self, phno, messageBody):
+    def deleteMessage(self, reqID):
+        """
+        Delete meesage from the dynamoDB table 
+        
+        :param reqID: Unique message ID to be deleted
+        """
         # deleting phno, message pair
         try:
-            self.table.delete_item(Key={'sentTo': phno, 'content': messageBody})
+            self.table.delete_item(Key={'messageID': reqID})
         except ClientError as err:
             self.logger.error(
-                "Couldn't delete message pair (%s,%s). Here's why: %s: %s", phno, messageBody,
+                "Couldn't delete message ID %s. Here's why: %s: %s", reqID,
                 err.response['Error']['Code'], err.response['Error']['Message'])
             raise
     
-if __name__ == '__main__':
-    logger = logging.getLogger(__name__)
-    db = MessageDB(logger, None)
-    if not db.dynamodb:
-        db.dynamodb = db.connect()
-        print(db.createTable("messages"))
-        print(db.updateTimer('c1eb8135-428d-43fe-a830-17d392fd8e12', (datetime.now())))
+# if __name__ == '__main__':
+#     logger = logging.getLogger(__name__)
+#     db = MessageDB(logger, None)
+#     if not db.dynamodb:
+#         db.dynamodb = db.connect()
+#         print(db.createTable("messages"))
+#         print(db.updateTimer('c1eb8135-428d-43fe-a830-17d392fd8e12', (datetime.now())))
