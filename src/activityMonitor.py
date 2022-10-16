@@ -1,3 +1,9 @@
+import argparse
+import asyncio
+import producerUtil, senderUtil
+import logging
+import trackerDB
+
 class ActivityMonitor:
     def __init__(self, checkTime):
         self.checkTime = checkTime
@@ -17,18 +23,12 @@ class ActivityMonitor:
         if not db.exists("tracker"):
                 print("Does not exist")
                 db.createTable("tracker")
+        db.addMessage()
         while True:
             self.getQuery(db)
             await asyncio.sleep(self.checkTime)
 
 if __name__ == '__main__':
-    
-    import argparse
-    import asyncio
-    import producerUtil, senderUtil
-    import logging
-    import trackerDB
-
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', dest='activityTime', type=int, help='Set number of seconds to casually look over the stats')

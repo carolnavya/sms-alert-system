@@ -1,3 +1,12 @@
+import argparse
+from time import sleep
+import boto3
+from botocore.exceptions import ClientError
+import logging
+import uuid
+import senderUtil, producerUtil as producerUtil
+from datetime import datetime
+
 class Sender:
     """
     Creates an object of the Sender class
@@ -57,14 +66,6 @@ class Sender:
         self.process_message(db, queue, queueUrl)
 
 if __name__ == "__main__":
-    import argparse
-    from time import sleep
-    import boto3
-    from botocore.exceptions import ClientError
-    import logging
-    import uuid
-    import senderUtil, producerUtil as producerUtil
-    from datetime import datetime
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', dest='waitTime', type=int, help='Add time that each sender has to wait (in seconds) before sending the next message')

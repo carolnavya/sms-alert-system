@@ -22,15 +22,15 @@ c.	Average time per message so far
 ## How to run
 To run producer:
 ```
-python3 producer.py -m=<max-messages-generated> -l<length-of-each-message>
+python3 producer.py -m=<max-messages-generated> -l=<length-of-each-message>
 ```
 To run Sender:
 ```
-python3 sender.py 
+python3 sender.py -w=<wait-time> -f=<failure-rate>
 ```
 To run activity Monitor
 ```
-python3 python3 activityMonitor.py -t=<Time(in SECS)-to-casually-overlook-stats>
+python3 python3 activityMonitor.py -t=<time(secs)-to-casually-overlook-stats>
 ```
 ## References
 - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html
