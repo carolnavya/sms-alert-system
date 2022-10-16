@@ -20,6 +20,7 @@ c.	Average time per message so far
 
 
 ## How to run
+Read the Cloud Engineer test documentation pdf for the project setup instructions.
 To run producer:
 ```
 python3 producer.py -m=<max-messages-generated> -l=<length-of-each-message>
