@@ -1,5 +1,0 @@
-{
-  "dynamodb_test.py": true,
-  "producer_test.py": true,
-  "sqs_test.py": true
-}
