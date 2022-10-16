@@ -11,8 +11,6 @@ class TrackerDB:
         self.logger = logger
     
     def connect(self):
-         
-        # Get the service resource.
         try:
             dynamodb = boto3.resource('dynamodb', region_name="us-west-2")
             print("Connected to AWS DynamoDB")
@@ -43,7 +41,6 @@ class TrackerDB:
     def createTable(self, table_name):
         
         if not self.exists(table_name):
-            # Create the DynamoDB table.
             try:
                 self.table = self.dynamodb.create_table(
                     TableName=table_name,
@@ -57,19 +54,9 @@ class TrackerDB:
                     ProvisionedThroughput={
                         'ReadCapacityUnits': 100,
                         'WriteCapacityUnits': 100
-                    },
-                    StreamSpecification={
-                        'StreamEnabled': True,
-                        'StreamViewType': 'NEW_AND_OLD_IMAGES'
-                    },
+                    }
                 )
-
-                # Wait until the table exists.
-                self.table.wait_until_exists()
-
-                # Print out some data about the table.
-                # print("Table contents:", self.table.item_count)
-                
+                self.table.wait_until_exists()        
             except ClientError as err:
                     self.logger.error(
                         "Couldn't create table. Here's why: %s: %s", self.table.name,
@@ -87,8 +74,8 @@ class TrackerDB:
                     })
         except ClientError as err:
             self.logger.error(
-                "Couldn't add message (%s,%s) to table %s. Here's why: %s: %s",
-                phno, messageBody, self.table.name,
+                "Couldn't add message ID %s to table %s. Here's why: %s: %s",
+               'aaaaaaaa-bbbb-1111-2222-abcde1234567' , self.table.name,
                 err.response['Error']['Code'], err.response['Error']['Message'])
             raise
     
@@ -113,9 +100,7 @@ class TrackerDB:
                 pretime = float(oldVal)
                 posttime = datetime.strptime(newVal,"%H:%M:%S.%f")
                 posttime = posttime.second+(posttime.minute*60)
-                # print(posttime)
                 mean_time = pretime+posttime/2
-            # print("MEAN TIME:", mean_time)
             response = self.table.update_item(
                     Key={
                         'trackerID': 'aaaaaaaa-bbbb-1111-2222-abcde1234567',
@@ -134,7 +119,6 @@ class TrackerDB:
     
     def getMessagesFailed(self):
         try:
-            # print("Table Name", self.table)
             n_failed = self.table.query(
                 ProjectionExpression="messagesFailed",
                 KeyConditionExpression = Key('trackerID').eq('aaaaaaaa-bbbb-1111-2222-abcde1234567'))
