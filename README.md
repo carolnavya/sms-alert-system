@@ -16,7 +16,7 @@ c.	Average time per message so far
 - AWS Lambda
 
 ## System overview
-![undefined drawio (1)](https://user-images.githubusercontent.com/36771418/195983717-f7c8f563-e236-4e15-a9e3-3448a1e02fd9.png)
+![undefined drawio (3)](https://user-images.githubusercontent.com/36771418/196522174-daf8e616-54a0-41d2-bed8-6539b46f783d.png)
 
 
 ## How to run
